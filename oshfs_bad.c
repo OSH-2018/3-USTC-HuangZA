@@ -12,7 +12,7 @@ typedef unsigned long long address;
 typedef unsigned long long mem_size;
 static const unsigned long long size_all = 4 * 1024 * 1024 * (size_t)1024;
 static const unsigned long long size_max = 4 * 1024;
-#define block_num  ((1 * 1024 * 1024 * (size_t)1024) /  (4 * 1024))
+#define block_num  ((4 * 1024 * 1024 * (size_t)1024) /  (4 * 1024))
 #define wrn_block_num (block_num / size_max / 8)
 struct filenode{
   char filename[FILENAMEMAX+1];
@@ -180,6 +180,9 @@ void * oshfs_init(){
 
 static int oshfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fi){
   struct filenode *node=root;
+  struct counter_block * cb ;
+  cb=(struct counter_block * ) mem_blocks[0];
+  //printf("use %llu\n",cb->used_nums);
   filler(buf, ".", NULL, 0);
   filler(buf, "..", NULL, 0);
   while(node){
