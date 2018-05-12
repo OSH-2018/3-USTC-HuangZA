@@ -225,6 +225,8 @@ static int oshfs_mknod(const char *path, mode_t mode, dev_t dev)
     st.st_gid = fuse_get_context()->gid;
     st.st_nlink = 1;
     st.st_size = 0;
+    st.st_blksize = BLOCK_LENGTH;
+    st.st_blocks = 0;
     //printf("create_filenode %s\n",path + 1 );
     i = create_filenode(path + 1, st);
     if(i == 0) return 0;
@@ -347,6 +349,7 @@ return -ENOENT;}
   }
   num = (node->st.st_size < offset)? node->st.st_size: offset;
   node->st.st_size = (node->st.st_size > num + size) ? node->st.st_size : num + size;
+  node->st.st_blocks = node->st.st_size / BLOCK_LENGTH;
   return write_size;
 }
 void free_block(address bid)
@@ -364,6 +367,7 @@ static int oshfs_truncate(const char *path, off_t size)
   //printf("truncate %s size = %ld\n",path+1,size);
   if(node == NULL) return -ENOENT;
   node->st.st_size = size;
+  node->st.st_blocks = node->st.st_size / BLOCK_LENGTH;
   if(node->content == 0 && size == 0) return 0;
   if(node->content == 0 && size != 0)
   {
