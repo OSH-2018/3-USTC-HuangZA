@@ -36,10 +36,11 @@ void * mem_blocks[block_num];
 struct counter_block{
   unsigned long long total_nums;
   unsigned long long used_nums;
+  struct filenode *filenode_root;
 };
+#define root (((struct counter_block*)mem_blocks[0])->filenode_root)
 
 
-struct filenode *root=NULL;
 
 static struct filenode *get_filenode(const char *name)
 {
@@ -173,6 +174,7 @@ void * oshfs_init(){
   }
   cb = (struct counter_block *) mem_blocks[0];
   cb->total_nums = block_num;
+  cb->filenode_root=NULL;
 //  cb->used_nums = 1 + wrn_block_num;
 	//printf("init done\n");
 	return NULL;
