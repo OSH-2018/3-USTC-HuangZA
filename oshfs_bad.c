@@ -45,7 +45,7 @@ struct counter_block{
 static struct filenode *get_filenode(const char *name)
 {
     struct filenode *node = root;
-    //printf("finding %s\n",name+1);
+    printf("finding %s\n",name+1);
     while(node) {
         if(strcmp(node->filename, name + 1) != 0)
             {
@@ -63,7 +63,7 @@ void * new_block(){
   memset(ret, 0, size_max);
   return ret;
 }
-//mark id 这里有问题
+
 void mark_block(unsigned long long block_id ){
   //对已经使用过的block进行mark防止之后再次使用,同时给cb已用的+1
   struct counter_block * cb ;
@@ -75,8 +75,8 @@ void mark_block(unsigned long long block_id ){
   }
   cb = (struct counter_block *) mem_blocks[0];
   cb->used_nums += 1;
-  //printf("use %llu\n",block_id);
-  //printf("c[%lld] = %x\n ", (block_id % (8 * size_max)) / (sizeof(unsigned int)*8),  c[(block_id % (8 * size_max)) / (sizeof(unsigned int)*8)]);
+  printf("use %llu\n",block_id);
+  printf("c[%d][%lld] = %x\n ",mark_id, (block_id % (8 * size_max)) / (sizeof(unsigned int)*8),  c[(block_id % (8 * size_max)) / (sizeof(unsigned int)*8)]);
 }
 
 void unmark_block(unsigned long long block_id ){
@@ -88,67 +88,42 @@ void unmark_block(unsigned long long block_id ){
     c = (unsigned int *) mem_blocks[mark_id];
     c[(block_id % (8 * size_max)) / (sizeof(unsigned int)*8)] &= ~(((unsigned int)1)<<(sizeof(unsigned int)*8-1)-((block_id % (8 * size_max)) % (sizeof(unsigned int)*8)));
   }
-    //printf("unuse %llu\n",block_id);
+    printf("unuse %llu\n",block_id);
   cb = (struct counter_block *) mem_blocks[0];
   cb->used_nums -= 1;
-  //printf("c[%lld] = %x\n ", (block_id % (8 * size_max)) / (sizeof(unsigned int)*8),  c[(block_id % (8 * size_max)) / (sizeof(unsigned int)*8)]);
+  printf("c[%d][%lld] = %x\n ",mark_id, (block_id % (8 * size_max)) / (sizeof(unsigned int)*8),  c[(block_id % (8 * size_max)) / (sizeof(unsigned int)*8)]);
 
 }
 int get_zero(unsigned int a)
 {
     int i;
-    //printf("a=%x\n",a);
+    printf("a=%x\n",a);
     for(i = 0;(a & (((unsigned int)1)<<(8*sizeof(unsigned int)-1))) != 0;i++)
     {
       a=a<<1;
     }
-    //printf("i= %d\n",i);
+    printf("i= %d\n",i);
     return i;//从0开始计数
 }
-unsigned int last_use_i=WRN_BLOCK_START,last_use_j=0;
+
 address find_free_block(){
 unsigned int i,j;
 int found = 0;
 unsigned int *a;
-for(i = last_use_i; i < wrn_block_num + WRN_BLOCK_START; i++)
+for(i = WRN_BLOCK_START; i < wrn_block_num + WRN_BLOCK_START; i++)
 {
-    //printf("i=%d\n",i );
+    printf("i=%d\n",i );
     a = (unsigned int *) mem_blocks[i];
-    for(j = last_use_j; j<(size_max/sizeof(unsigned int)); j++)
+    for(j = 0; j<(size_max/sizeof(unsigned int)); j++)
     {
       if(a[j] != 0xffffffff) {
-        //printf("a[j]= %x\n",a[j]);
-        //printf("j=%d\n",j );
+        printf("a[j]= %x\n",a[j]);
+        printf("j=%d\n",j );
         found = 1;
         break;
       }
     }
-    if(found == 1)
-    { last_use_i=i;
-      last_use_j=j;
-      break;}
-}
-if(found == 0)
-{
-  last_use_i=WRN_BLOCK_START,last_use_j=0;
-  for(i = last_use_i; i < wrn_block_num + WRN_BLOCK_START; i++)
-{
-    //printf("i=%d\n",i );
-    a = (unsigned int *) mem_blocks[i];
-    for(j = last_use_j; j<(size_max/sizeof(unsigned int)); j++)
-    {
-      if(a[j] != 0xffffffff) {
-        //printf("a[j]= %x\n",a[j]);
-        //printf("j=%d\n",j );
-        found = 1;
-        break;
-      }
-    }
-    if(found == 1)
-    { last_use_i=i;
-      last_use_j=j;
-      break;}
-}
+    if(found==1) break;
 }
 if(found ==0) return 0;
 return get_zero(a[j]) + 8*sizeof(unsigned int) * j + size_max * (i-WRN_BLOCK_START);
@@ -176,7 +151,7 @@ void * oshfs_init(){
   cb->total_nums = block_num;
   cb->filenode_root=NULL;
 //  cb->used_nums = 1 + wrn_block_num;
-	//printf("init done\n");
+	printf("init done\n");
 	return NULL;
 }
 
@@ -184,7 +159,7 @@ static int oshfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler, of
   struct filenode *node=root;
   struct counter_block * cb ;
   cb=(struct counter_block * ) mem_blocks[0];
-  //printf("use %llu\n",cb->used_nums);
+  printf("use %llu\n",cb->used_nums);
   filler(buf, ".", NULL, 0);
   filler(buf, "..", NULL, 0);
   while(node){
@@ -196,7 +171,7 @@ static int oshfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler, of
 static int create_filenode(const char *filename, const struct stat st){
   address a;
   a=find_free_block();
-  //printf("find free_block %llu",a);
+  printf("find free_block %llu",a);
   if(a != 0){
   mark_block(a);
   struct filenode *node;
@@ -214,7 +189,7 @@ static int create_filenode(const char *filename, const struct stat st){
   return 0;
   }
   else{
-    //printf("no space to use\n");
+    printf("no space to use\n");
     return 1;
   }
 }
@@ -227,9 +202,9 @@ static int oshfs_mknod(const char *path, mode_t mode, dev_t dev)
     st.st_gid = fuse_get_context()->gid;
     st.st_nlink = 1;
     st.st_size = 0;
-    st.st_blksize = BLOCK_LENGTH;
+    st.st_blksize = BLOCK_LENGTH*8;
     st.st_blocks = 0;
-    //printf("create_filenode %s\n",path + 1 );
+    printf("create_filenode %s\n",path + 1 );
     i = create_filenode(path + 1, st);
     if(i == 0) return 0;
     else return -errno;
@@ -245,14 +220,14 @@ static int oshfs_getattr(const char *path, struct stat *stbuf)
     } else if(node) {
         memcpy(stbuf, &(node->st), sizeof(struct stat));
     } else {
-        //printf("not found %s \n",path +1);
+        printf("not found %s \n",path +1);
         ret = -ENOENT;
     }
     return ret;
 }
 static int oshfs_open(const char *path, struct fuse_file_info *fi)
 {
-    //printf("open %s\n",path +1 );
+    printf("open %s\n",path +1 );
     return 0;
 }
 
@@ -297,7 +272,7 @@ address find_offset(size_t offset,struct filenode *node)
     }
     else a =block_a->next;
   }
-  //printf("address %llu\n",a);
+  printf("address %llu\n",a);
   return a;
 }
 
@@ -305,7 +280,7 @@ static int oshfs_write(const char *path, const char *buf, size_t size, off_t off
 {
   struct filenode *node = get_filenode(path);
   if(node == NULL)
-{//printf("not found\n");
+{printf("not found\n");
 return -ENOENT;}
   struct counter_block * cb = (struct counter_block *)mem_blocks[0];
   address write_address;
@@ -313,14 +288,14 @@ return -ENOENT;}
   size_t begin =sizeof(address) + offset % (size_max-sizeof(address));
   size_t num;
   unsigned long long need_blocks,aval_blocks;
-  //printf("write %s at %ld\n",path +1,offset);
+  printf("write %s at %ld\n",path +1,offset);
   aval_blocks = cb->total_nums - cb->used_nums;
   need_blocks = (offset + size - node->st.st_size + size_max - 1) / size_max;
-  //printf("aval_blocks=%llu need_blocks =%llu\n",aval_blocks,need_blocks);
+  printf("aval_blocks=%llu need_blocks =%llu\n",aval_blocks,need_blocks);
   if(need_blocks > aval_blocks) return -errno;
 
   write_address=find_offset(offset,node);
-  //printf("begin write %llu\n",write_address);
+  printf("begin write %llu\n",write_address);
   while(write_size<size)
   {
     if(size-write_size <= size_max - begin)
@@ -351,14 +326,14 @@ return -ENOENT;}
   }
   num = (node->st.st_size < offset)? node->st.st_size: offset;
   node->st.st_size = (node->st.st_size > num + size) ? node->st.st_size : num + size;
-  node->st.st_blocks = node->st.st_size / BLOCK_LENGTH;
+  node->st.st_blocks = (node->st.st_size + BLOCK_LENGTH-1) / BLOCK_LENGTH;
   return write_size;
 }
 void free_block(address bid)
 {
   unmark_block(bid);
   munmap(mem_blocks[bid],size_max);
-  //printf("unmap %lld done\n",bid);
+  printf("unmap %lld done\n",bid);
 }
 static int oshfs_truncate(const char *path, off_t size)
 {
@@ -366,9 +341,8 @@ static int oshfs_truncate(const char *path, off_t size)
   address a;
   struct block * block_a;
   struct filenode *node = get_filenode(path);
-  //printf("truncate %s size = %ld\n",path+1,size);
+  printf("truncate %s size = %ld\n",path+1,size);
   if(node == NULL) return -ENOENT;
-  node->st.st_blocks = node->st.st_size / BLOCK_LENGTH;
   if(node->content == 0 && size == 0) return 0;
   if(node->content == 0 && size != 0)
   {
@@ -384,7 +358,7 @@ static int oshfs_truncate(const char *path, off_t size)
     count = ((node->st.st_size+BLOCK_LENGTH-1)/BLOCK_LENGTH) *BLOCK_LENGTH;
     a = node-> end;
   }
-  //printf("node_content =%llu\n",a );
+  printf("node_content =%llu\n",a );
   while (count<size) {
     if(size-count<BLOCK_LENGTH) break;
     block_a = (struct block *) mem_blocks[a];
@@ -401,9 +375,9 @@ static int oshfs_truncate(const char *path, off_t size)
       a = block_a->next;
     }
     count += BLOCK_LENGTH;
-    //printf("size - count = %ld\n",size - count);
+    printf("size - count = %ld\n",size - count);
   }
-  //printf("bigger success %ld\n",count );
+  printf("bigger success %ld\n",count );
   node->end=a;
   block_a = (struct block *) mem_blocks[a];
     while(block_a->next != 0)
@@ -414,7 +388,9 @@ static int oshfs_truncate(const char *path, off_t size)
     }
 
     node->st.st_size = size;
-    //printf("truncate success,start at %llu\n",node->content);
+    node->st.st_blocks = (node->st.st_size+BLOCK_LENGTH-1) / BLOCK_LENGTH;
+
+    printf("truncate success,start at %llu\n",node->content);
 return 0;
 }
 static struct filenode *get_next_filenode(const char *name)
@@ -430,7 +406,6 @@ static struct filenode *get_next_filenode(const char *name)
     }
     return NULL;
 }
-//这里有问题，有错误
 static int oshfs_unlink(const char *path)
 {
   int found=0;
@@ -439,7 +414,7 @@ static int oshfs_unlink(const char *path)
   address content;
   if (node == NULL)
   {
-    //printf("NO THIS FILE %s\n",path+1 );
+    printf("NO THIS FILE %s\n",path+1 );
     return -ENOENT;
   }
   if(strcmp(node->filename, path + 1) == 0)
@@ -465,11 +440,11 @@ static int oshfs_unlink(const char *path)
               break;
             }
   }}
-  //printf("get free node done\n" );
+  printf("get free node done\n" );
   if(found == 0) return -ENOENT;
   while(content!=0)
   {
-    //printf("freeing content= %lld\n",content );
+    printf("freeing content= %lld\n",content );
     address b;
     block_content = (struct block *)mem_blocks[content];
     b=block_content->next;
@@ -494,7 +469,7 @@ static int oshfs_read(const char *path, char *buf, size_t size, off_t offset, st
         size = node->st.st_size - offset;
 
   read_address=find_offset(offset,node);
-
+  printf("begin read \n");
   while(read_size<size)
   {
     if(size-read_size <= size_max - begin)
@@ -512,7 +487,7 @@ static int oshfs_read(const char *path, char *buf, size_t size, off_t offset, st
       address next_address=((struct block *)mem_blocks[read_address])->next;
       if(next_address == 0)
       {
-        //printf("read出错\n");
+        printf("read出错\n");
         return -errno;
       }
       read_address = next_address;
@@ -520,6 +495,16 @@ static int oshfs_read(const char *path, char *buf, size_t size, off_t offset, st
     }
   }
   return read_size;
+}
+static int oshfs_statfs(const char * path, struct statvfs *st) //df supported
+{
+  struct counter_block *cb = (struct counter_block *)mem_blocks[0];
+  st->f_bsize = size_max*8;
+  st->f_frsize = size_max*8;
+  st->f_blocks = cb->total_nums;
+  st->f_bfree = cb->total_nums - cb->used_nums;
+  st->f_bavail = cb->total_nums - cb->used_nums;
+  return 0;
 }
 static const struct fuse_operations op = {
     .init = oshfs_init,
@@ -531,6 +516,7 @@ static const struct fuse_operations op = {
     .truncate = oshfs_truncate,
     .read = oshfs_read,
     .unlink = oshfs_unlink,
+    .statfs = oshfs_statfs,
 };
 
 int main(int argc, char *argv[])
