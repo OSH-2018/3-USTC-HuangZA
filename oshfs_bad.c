@@ -368,7 +368,6 @@ static int oshfs_truncate(const char *path, off_t size)
   struct filenode *node = get_filenode(path);
   //printf("truncate %s size = %ld\n",path+1,size);
   if(node == NULL) return -ENOENT;
-  node->st.st_size = size;
   node->st.st_blocks = node->st.st_size / BLOCK_LENGTH;
   if(node->content == 0 && size == 0) return 0;
   if(node->content == 0 && size != 0)
@@ -414,6 +413,7 @@ static int oshfs_truncate(const char *path, off_t size)
       free_block(b);
     }
 
+    node->st.st_size = size;
     //printf("truncate success,start at %llu\n",node->content);
 return 0;
 }
