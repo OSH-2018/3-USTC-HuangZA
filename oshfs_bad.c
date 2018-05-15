@@ -110,11 +110,11 @@ int get_zero(unsigned int a)
 address find_free_block(){
 unsigned int i,j;
 int found = 0;
-unsigned int *a;
+uint32_t *a;
 for(i = WRN_BLOCK_START; i < wrn_block_num + WRN_BLOCK_START; i++)
 {
     //printf("i=%d\n",i );
-    a = (unsigned int *) mem_blocks[i];
+    a = (uint32_t *) mem_blocks[i];
     for(j = 0; j<(size_max/sizeof(unsigned int)); j++)
     {
       if(a[j] != 0xffffffff) {
