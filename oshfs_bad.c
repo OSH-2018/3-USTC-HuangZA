@@ -115,7 +115,7 @@ for(i = WRN_BLOCK_START; i < wrn_block_num + WRN_BLOCK_START; i++)
 {
     //printf("i=%d\n",i );
     a = (uint32_t *) mem_blocks[i];
-    for(j = 0; j<(size_max/sizeof(unsigned int)); j++)
+    for(j = 0; j<(size_max/sizeof(uint32_t)); j++)
     {
       if(a[j] != 0xffffffff) {
         //printf("a[j]= %x\n",a[j]);
@@ -127,7 +127,7 @@ for(i = WRN_BLOCK_START; i < wrn_block_num + WRN_BLOCK_START; i++)
     if(found==1) break;
 }
 if(found ==0) return 0;
-return get_zero(a[j]) + 8*sizeof(unsigned int) * j + size_max * (i-WRN_BLOCK_START);
+return get_zero(a[j]) + 8*sizeof(uint32_t) * j + size_max * (i-WRN_BLOCK_START);
 //这个address 从 0开始
 }
 
