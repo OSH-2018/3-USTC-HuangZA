@@ -291,9 +291,11 @@ return -ENOENT;}
   size_t begin =sizeof(address) + offset % (size_max-sizeof(address));
   size_t num;
   unsigned long long need_blocks,aval_blocks;
-  //printf("write %s at %ld\n",path +1,offset);
+  //printf("write %s at %ld,size =%d\n",path +1,offset,size);
   aval_blocks = cb->total_nums - cb->used_nums;
-  need_blocks = (offset + size - node->st.st_size + size_max - 1) / size_max;
+  if(offset + size - 1> node->st.st_size + size_max )
+  need_blocks = (offset + size - node->st.st_size + size_max - 1) / BLOCK_LENGTH;
+  else need_blocks=0;
   //printf("aval_blocks=%llu need_blocks =%llu\n",aval_blocks,need_blocks);
   if(need_blocks > aval_blocks) return -errno;
 
@@ -312,7 +314,7 @@ return -ENOENT;}
     }
     write_address=next;
   }
-  //printf("begin write %llu\n",write_address);
+
   while(write_size<size)
   {
     if(size-write_size <= size_max - begin)
@@ -320,6 +322,7 @@ return -ENOENT;}
       char * dst = (char *)mem_blocks[write_address];
       dst += begin;
       memcpy(dst,buf + write_size,size-write_size);
+      //printf("begin write %llu as size- write_size= %ld,left 0\n",write_address,size-write_size);
       write_size = size;
     }
     else{
@@ -327,6 +330,7 @@ return -ENOENT;}
       dst += begin;
       memcpy(dst,buf + write_size,size_max-begin);
       write_size +=size_max-begin;
+      //printf("begin write %llu as size- write_size=%ld,left %lld\n",write_address,size_max-begin,size-write_size );
       address next_address=((struct block *)mem_blocks[write_address])->next;
       if(next_address == 0)
       {
@@ -340,6 +344,7 @@ return -ENOENT;}
       write_address = next_address;
       begin = sizeof(address);
     }
+
   }
   num = (node->st.st_size < offset)? node->st.st_size: offset;
   node->st.st_size = (node->st.st_size > num + size) ? node->st.st_size : num + size;
